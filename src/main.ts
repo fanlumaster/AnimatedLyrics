@@ -29,6 +29,20 @@ const audio = document.createElement("audio");
 audio.volume = 0.18;
 audio.preload = "auto";
 
+function hideFirstInterludeDots() {
+  const interludeDotsElement = document.querySelector('[class*="interludeDots"]') as HTMLDivElement | null;
+  if (interludeDotsElement) {
+    interludeDotsElement.style.display = "none";
+  }
+}
+
+function showFirstInterludeDots() {
+  const interludeDotsElement = document.querySelector('[class*="interludeDots"]') as HTMLDivElement | null;
+  if (interludeDotsElement) {
+    interludeDotsElement.style.display = "flex";
+  }
+}
+
 const debugValues = {
   lyric: new URL(location.href).searchParams.get("lyric") || "",
   music: new URL(location.href).searchParams.get("music") || "",
@@ -59,6 +73,8 @@ const debugValues = {
     this.playing = true;
     audio.load();
     audio.play();
+    lyricPlayer.resume();
+    showFirstInterludeDots();
   },
   pause() {
     this.playing = false;
@@ -96,6 +112,10 @@ const debugValues = {
 debugValues.lyric = "./assets/lyrics.ttml";
 debugValues.album = "./assets/Cover.jpg";
 debugValues.music = "./assets/春日影 (MyGO!!!!! Ver.).mp3";
+
+// debugValues.lyric = "./assets/约定 - 王菲.lrc";
+// debugValues.album = "./assets/约定 - 王菲.jpg";
+// debugValues.music = "./assets/约定 - 王菲.flac";
 
 function recreateBGRenderer(mode: string) {
   window.globalBackground?.dispose();
@@ -344,6 +364,7 @@ async function loadLyric() {
           startTime: curTime,
           endTime,
           obscene: false,
+          romanWord: "",
         });
         curTime = endTime;
       }
@@ -391,23 +412,35 @@ async function loadLyric() {
   }
   await loadLyric();
 
+  // 暂停歌词播放器，防止间奏点在播放前动画
+  hideFirstInterludeDots();
+  lyricPlayer.pause();
+
   // debugValues.play();
   // debugValues.currentTime = 34;
   // debugValues.mockPlay();
 
-  document.addEventListener(
-    "click",
-    () => {
-      debugValues.play();
-    },
-    { once: true }
-  );
+  // 注释掉全局点击监听器，避免点击任何地方都触发播放
+  // 现在只能通过播放按钮来触发播放
+  // document.addEventListener(
+  //   "click",
+  //   (e) => {
+  //     debugValues.play();
+  //   },
+  //   { once: true }
+  // );
 
   document.addEventListener("keydown", (e) => {
+    // Shift+D: 切换调试面板
     if (e.shiftKey && e.key.toLowerCase() === "d") {
       const isHidden = gui.domElement.style.display === "none";
       gui.domElement.style.display = isHidden ? "block" : "none";
       stats.dom.style.display = isHidden ? "block" : "none";
+    }
+    // Space: 切换播放/暂停
+    else if (e.key === " " || e.code === "Space") {
+      e.preventDefault(); // 防止页面滚动
+      debugValues.pause(); // pause() 方法实际上是 toggle 播放/暂停
     }
   });
 
